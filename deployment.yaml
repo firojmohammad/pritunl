@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vpn-pritunl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vpn-pritunl
+  template:
+    metadata:
+      labels:
+        app: vpn-pritunl
+    spec:
+      containers:
+        - env:
+          #- name: PRITUNL_MONGODB_URI
+          #   value: mongodb://monggo-mongodb.vpn.svc.cluster.local:27017/pritunl
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: monggo-mongodb
+                  key: mongodb-root-password
+          image: jippi/pritunl
+          name: pritunl
+          ports:
+            - containerPort: 1194
+              protocol: TCP
+            - containerPort: 80
+            - containerPort: 443
+          securityContext:
+            privileged: true
+      restartPolicy: Always
