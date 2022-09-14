@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pritunl
+  labels:
+    app: pritunl
+spec:
+  ports:
+    - port: 443
+  selector:
+    app: pritunl
+  type: NodePort
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pritunl-pv-claim
+  labels:
+    app: pritunl
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pritunl
+  labels:
+    app: pritunl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pritunl
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: pritunl
+    spec:
+      containers:
+      - image: jippi/pritunl
+        name: pritunl
+        env:
+        - name: PRITUNL_DB_HOST
+          value: pritunl-mongo
+        - name: PRITUNL_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongo-pass
+              key: password
+        ports:
+        - containerPort: 443
+          name: pritunl
+        volumeMounts:
+        - name: pritunl-persistent-storage
+          mountPath: /var/www/html
+      volumes:
+      - name: pritunl-persistent-storage
+        persistentVolumeClaim:
+          claimName: pritunl-pv-claim
